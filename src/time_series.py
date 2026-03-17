@@ -18,7 +18,7 @@ from statsmodels.tsa.seasonal import STL
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 # Force the project root into the path so imports always work
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.utils.formatting import debug_print
 

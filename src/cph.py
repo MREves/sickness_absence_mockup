@@ -11,17 +11,23 @@ import plotly.graph_objects as go
 import os
 import sys 
 # Force the project root into the path so imports always work
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.utils.formatting import debug_print
 from src.data_factory import generate_nhs_dummy_data
 
 class CoxModel:
-    def __init__(self, cols_to_drop=None):
+    def __init__(self, cols_to_drop=None, cluster_col=None):
         self.model = CoxPHFitter()
         self.fitted = False
         # Default columns to ignore during training
         self.cols_to_drop = cols_to_drop or ['staff_id', 'prev_absences', 'start_date', 'end_date', 'is_clinical']
+        self.cluster_col = cluster_col
         self.training_cols = None
+
+        # If cluster_col is set and happens to be in cols_to_drop, we must remove it 
+        # so it survives the preprocessing step and can be passed to fit()
+        if self.cluster_col and self.cluster_col in self.cols_to_drop:
+            self.cols_to_drop.remove(self.cluster_col)
     
     def preprocess(self, df, is_training=True):
         """
@@ -56,7 +62,7 @@ class CoxModel:
         """
         processed_df = self.preprocess(df, is_training=True)
         self.training_cols = processed_df.columns.tolist()
-        self.model.fit(processed_df, duration_col=duration_col, event_col=event_col)
+        self.model.fit(processed_df, duration_col=duration_col, event_col=event_col, cluster_col=self.cluster_col)
         self.fitted = True
     
     def summary(self):
@@ -329,7 +335,7 @@ class CoxModel:
     #test class with synthetic data
 if __name__ == "__main__":
     ts_df, staff_df = generate_nhs_dummy_data()
-    cox_model = CoxModel()
+    cox_model = CoxModel(cluster_col='staff_id')
     cox_model.fit(staff_df)
     
     # Interprets the model mathematically and conversationally
