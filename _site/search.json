@@ -1,0 +1,65 @@
+[
+  {
+    "objectID": "absence_dashboard.html",
+    "href": "absence_dashboard.html",
+    "title": "Executive Overview",
+    "section": "",
+    "text": "# VALUE BOX: Shows a single KPI card\ndict(value = len(staff_df), icon = \"people\", color = \"primary\")\n#| components: valuebox\ndict(value=f\"{len(staff_df):,}\", header=\"Total Staff Analyzed\", icon=\"people\", color=\"primary\")\n\n#| components: valuebox\n#| dict(value=f\"{survival_metrics['concordance_index']:.3f}\", header=\"C-Index (Survival Model)\", icon=\"graph-up-arrow\", color=\"secondary\")\n\n{'value': '1,000',\n 'header': 'Total Staff Analyzed',\n 'icon': 'people',\n 'color': 'primary'}\n\n\n::: ## Strategic Summary This page provides a high-level summary of the key findings from the sickness absence analysis. Use this space to outline strategic recommendations for the wellbeing team, informed by the detailed analysis on the other pages."
+  },
+  {
+    "objectID": "absence_dashboard.html#row",
+    "href": "absence_dashboard.html#row",
+    "title": "Executive Overview",
+    "section": "",
+    "text": "# VALUE BOX: Shows a single KPI card\ndict(value = len(staff_df), icon = \"people\", color = \"primary\")\n#| components: valuebox\ndict(value=f\"{len(staff_df):,}\", header=\"Total Staff Analyzed\", icon=\"people\", color=\"primary\")\n\n#| components: valuebox\n#| dict(value=f\"{survival_metrics['concordance_index']:.3f}\", header=\"C-Index (Survival Model)\", icon=\"graph-up-arrow\", color=\"secondary\")\n\n{'value': '1,000',\n 'header': 'Total Staff Analyzed',\n 'icon': 'people',\n 'color': 'primary'}\n\n\n::: ## Strategic Summary This page provides a high-level summary of the key findings from the sickness absence analysis. Use this space to outline strategic recommendations for the wellbeing team, informed by the detailed analysis on the other pages."
+  },
+  {
+    "objectID": "absence_dashboard.html#row-1",
+    "href": "absence_dashboard.html#row-1",
+    "title": "Executive Overview",
+    "section": "",
+    "text": "# INTERACTIVE CHART: Uses the data generated in the setup block\nfig = px.line(ts_df.to_pandas(), x=\"date\", y=\"y\", \n             title=\"Daily Absence Volume (All Staff)\",\n             template=\"plotly_white\")\nfig.show()"
+  },
+  {
+    "objectID": "absence_dashboard.html#row-2",
+    "href": "absence_dashboard.html#row-2",
+    "title": "Executive Overview",
+    "section": "Row",
+    "text": "Row\n\nStatistical Hazard Ratios\n\n# TABLE CARD: Quarto automatically renders the last object (the dataframe) as a table\nhr_table = cox_model.summary()[['exp(coef)', 'p']]\nhr_table.index.name = 'Variable'\nhr_table\n\n\n\n\n\n\n\n\nexp(coef)\np\n\n\nVariable\n\n\n\n\n\n\nage\n0.981207\n8.531210e-13\n\n\nimd_quintile\n1.127288\n3.104034e-07\n\n\ntenure_years\n1.007077\n1.266932e-01\n\n\ngender_M\n1.273585\n1.700896e-04\n\n\nrole_Admin\n1.496839\n1.168448e-04\n\n\nrole_Doctor\n1.028253\n7.909872e-01\n\n\nrole_Manager\n1.281389\n1.840176e-02\n\n\nrole_Nurse\n1.110736\n3.248992e-01\n\n\n\n\n\n\n\n\n\nProbability of Remaining Off-Work\n\n# CUSTOM PLOT CARD: Dynamically generates a tab for every covariate plot\nfor covariate, fig in survival_plots.items():\n    print(f\"#### By {covariate.replace('_', ' ').title()}\\n\")\n    fig.show()\n\nBy Age\n                            \n                                            \n\n\nBy Gender\n                            \n                                            \n\n\nBy Role\n                            \n                                            \n\n\nBy Imd Quintile\n                            \n                                            \n\n\nBy Tenure Years"
+  },
+  {
+    "objectID": "forecast_analysis.html",
+    "href": "forecast_analysis.html",
+    "title": "Forecast Analysis",
+    "section": "",
+    "text": "This chart compares the performance of a sophisticated SARIMA model against a simple Seasonal Naive forecast. The SARIMA model provides a more accurate prediction by capturing complex trends and seasonality in the historical absence data.\n\nforecast_fig.show()"
+  },
+  {
+    "objectID": "forecast_analysis.html#force-wide-absence-forecast",
+    "href": "forecast_analysis.html#force-wide-absence-forecast",
+    "title": "Forecast Analysis",
+    "section": "",
+    "text": "This chart compares the performance of a sophisticated SARIMA model against a simple Seasonal Naive forecast. The SARIMA model provides a more accurate prediction by capturing complex trends and seasonality in the historical absence data.\n\nforecast_fig.show()"
+  },
+  {
+    "objectID": "survival_analysis.html",
+    "href": "survival_analysis.html",
+    "title": "Survival Analysis",
+    "section": "",
+    "text": "insights_table = insights_df[['exp(coef)', 'pct_change', 'p', 'is_significant']]\ninsights_table.index.name = 'Variable'\ninsights_table\n\n\n\n\n\n\n\n\nexp(coef)\npct_change\np\nis_significant\n\n\nVariable\n\n\n\n\n\n\n\n\nage\n0.981207\n-1.879320\n8.531210e-13\nTrue\n\n\ntenure_years\n1.007077\n0.707666\n1.266932e-01\nFalse\n\n\nrole_Doctor\n1.028253\n2.825338\n7.909872e-01\nFalse\n\n\nrole_Nurse\n1.110736\n11.073648\n3.248992e-01\nFalse\n\n\nimd_quintile\n1.127288\n12.728789\n3.104034e-07\nTrue\n\n\ngender_M\n1.273585\n27.358526\n1.700896e-04\nTrue\n\n\nrole_Manager\n1.281389\n28.138907\n1.840176e-02\nTrue\n\n\nrole_Admin\n1.496839\n49.683880\n1.168448e-04\nTrue\n\n\n\n\n\n\n\n\npd.set_option('display.max_colwidth', None)  # Ensure full text is shown\ninsight_table_plain_english = insights_df.loc[insights_df['is_significant'], ['interpretation']]\ninsight_table_plain_english.index.name = 'Variable'\n\ninsight_table_plain_english\n\n\n\n\n\n\n\n\ninterpretation\n\n\nVariable\n\n\n\n\n\nage\nDecreases the likelihood of returning to work by 1.9% (PROLONGS absence)\n\n\nimd_quintile\nIncreases the likelihood of returning to work by 12.7% (SHORTENS absence)\n\n\ngender_M\nIncreases the likelihood of returning to work by 27.4% (SHORTENS absence)\n\n\nrole_Manager\nIncreases the likelihood of returning to work by 28.1% (SHORTENS absence)\n\n\nrole_Admin\nIncreases the likelihood of returning to work by 49.7% (SHORTENS absence)\n\n\n\n\n\n\n\n\nprint(\"### {.panel-tabset}\")\nfor covariate, fig in survival_plots.items():\n    print(f\"#### {covariate.replace('_', ' ').title()}\")\n    fig.show()\n    print(\"\\n\")"
+  },
+  {
+    "objectID": "survival_analysis.html#cox-proportional-hazards-model-results",
+    "href": "survival_analysis.html#cox-proportional-hazards-model-results",
+    "title": "Survival Analysis",
+    "section": "",
+    "text": "insights_table = insights_df[['exp(coef)', 'pct_change', 'p', 'is_significant']]\ninsights_table.index.name = 'Variable'\ninsights_table\n\n\n\n\n\n\n\n\nexp(coef)\npct_change\np\nis_significant\n\n\nVariable\n\n\n\n\n\n\n\n\nage\n0.981207\n-1.879320\n8.531210e-13\nTrue\n\n\ntenure_years\n1.007077\n0.707666\n1.266932e-01\nFalse\n\n\nrole_Doctor\n1.028253\n2.825338\n7.909872e-01\nFalse\n\n\nrole_Nurse\n1.110736\n11.073648\n3.248992e-01\nFalse\n\n\nimd_quintile\n1.127288\n12.728789\n3.104034e-07\nTrue\n\n\ngender_M\n1.273585\n27.358526\n1.700896e-04\nTrue\n\n\nrole_Manager\n1.281389\n28.138907\n1.840176e-02\nTrue\n\n\nrole_Admin\n1.496839\n49.683880\n1.168448e-04\nTrue\n\n\n\n\n\n\n\n\npd.set_option('display.max_colwidth', None)  # Ensure full text is shown\ninsight_table_plain_english = insights_df.loc[insights_df['is_significant'], ['interpretation']]\ninsight_table_plain_english.index.name = 'Variable'\n\ninsight_table_plain_english\n\n\n\n\n\n\n\n\ninterpretation\n\n\nVariable\n\n\n\n\n\nage\nDecreases the likelihood of returning to work by 1.9% (PROLONGS absence)\n\n\nimd_quintile\nIncreases the likelihood of returning to work by 12.7% (SHORTENS absence)\n\n\ngender_M\nIncreases the likelihood of returning to work by 27.4% (SHORTENS absence)\n\n\nrole_Manager\nIncreases the likelihood of returning to work by 28.1% (SHORTENS absence)\n\n\nrole_Admin\nIncreases the likelihood of returning to work by 49.7% (SHORTENS absence)\n\n\n\n\n\n\n\n\nprint(\"### {.panel-tabset}\")\nfor covariate, fig in survival_plots.items():\n    print(f\"#### {covariate.replace('_', ' ').title()}\")\n    fig.show()\n    print(\"\\n\")"
+  },
+  {
+    "objectID": "forecast_analysis.html#model-performance-interpretation",
+    "href": "forecast_analysis.html#model-performance-interpretation",
+    "title": "Forecast Analysis",
+    "section": "Model Performance & Interpretation",
+    "text": "Model Performance & Interpretation\nmae = forecast_metrics['arima_mae']\nnaive_mae = forecast_metrics['naive_mae']\npct_better = ((naive_mae - mae) / naive_mae) * 100\n\nprint(f\"**Forecasting Accuracy (Mean Absolute Error):** The model is currently able to predict daily absence volumes with an average error of **{mae:.1f} absences**. \\n\")\nprint(f\"This is **{pct_better:.1f}% more accurate** than simply assuming absences will be exactly the same as they were at this time last year (the baseline 'Seasonal Naive' method, which has an average error of {naive_mae:.1f} absences).\\n\\n\")\n\nprint(\"&gt; *Note: A 'Concordance Score' is used to measure the accuracy of Time-to-Event (Survival) models. For time series forecasting like this chart, we use Mean Absolute Error (MAE), which tells us exactly how many people our forecast is off by on an average day.*\")\nForecasting Accuracy (Mean Absolute Error): The model is currently able to predict daily absence volumes with an average error of 14.7 absences.\nThis is 76.3% more accurate than simply assuming absences will be exactly the same as they were at this time last year (the baseline ‘Seasonal Naive’ method, which has an average error of 62.1 absences).\n\nNote: A ‘Concordance Score’ is used to measure the accuracy of Time-to-Event (Survival) models. For time series forecasting like this chart, we use Mean Absolute Error (MAE), which tells us exactly how many people our forecast is off by on an average day."
+  }
+]

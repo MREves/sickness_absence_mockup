@@ -1,0 +1,151 @@
+---
+title: "Survival Analysis"
+subtitle: "Part 1: Survival Analysis (Time to Return to Work)"
+format: 
+  revealjs:
+    theme: simple
+    slide-number: c/t
+    width: 1600
+    height: 900
+    embed-resources: true
+execute:
+  echo: false
+  warning: false
+jupyter: python3
+---
+
+```{python}
+#| label: setup
+#| include: false
+#| cache: false
+import sys
+import os
+import pandas as pd
+
+# Point Python to your source folder
+sys.path.append(os.getcwd())
+
+from src.data_factory import generate_nhs_dummy_data
+from src.models import get_dashboard_survival_outputs
+
+# Generate data and model once
+_, staff_df = generate_nhs_dummy_data()
+
+# Run Survival Model
+cox_model, insights_df, survival_plots, metrics = get_dashboard_survival_outputs(staff_df)
+```
+
+## Cox Proportional Hazards Model Results
+
+ * **Objective**: Understand the factors that influence how quickly staff return to work after starting a sickness absence. 
+ * **Methodology**: We use Survival Analysis (a Cox Proportional Hazards model). Rather than predicting *if* someone will return, this model predicts *when they are likely to return*. 
+ * **Key Insight**: We can identify specific personal and professional characteristics that either prolong or shorten the expected duration of an absence, enabling targeted wellbeing interventions. 
+ 
+## Key Drivers: Impact on Return to Work 
+This table highlights factors that significantly impact the duration of an absence.
+```{python} 
+#| label: cph-interpretations 
+from IPython.display import HTML 
+pd.set_option('display.max_colwidth', None) 
+# Filter for significant factors 
+significant_insights = insights_df[insights_df['is_significant']].copy() 
+# Style the dataframe for presentation 
+
+def color_impact(val):
+    if 'PROLONGS' in str(val):
+        return 'color: #d9534f; font-weight: bold;' # Red
+    elif 'SHORTENS' in str(val):
+        return 'color: #5cb85c; font-weight: bold;' # Green
+    return ''
+
+styled_table = significant_insights[['interpretation']].style.map(color_impact).set_table_styles([
+    {'selector': 'th', 'props': [('font-size', '1.2em'), ('text-align', 'left')]},
+    {'selector': 'td', 'props': [('font-size', '1.1em'), ('padding', '10px')]}])
+
+HTML(styled_table.to_html())
+``` 
+
+
+## Interactive Survival Curves {.scrollable}
+The charts below illustrate the probability of remaining off-work over time, broken down by different characteristics. Select a feature to explore.
+
+```{=html}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+```
+```{python}
+#| label: survival-dropdown-viz
+import plotly.graph_objects as go
+
+combined_fig = go.Figure()
+dropdown_buttons = []
+covariates = list(survival_plots.keys())
+trace_visibility_map = {}
+current_idx = 0
+
+#1. Add all traces from all plots into one figure
+for covariate, fig in survival_plots.items():
+    for trace in fig['data']:
+        #only the traces for the first covariate will be visible by default
+        trace['visible'] = (covariate == covariates[0])
+        combined_fig.add_trace(trace)
+    
+    num_traces = len(fig['data'])
+    trace_visibility_map[covariate] = (current_idx, current_idx + num_traces)
+    current_idx += num_traces
+
+total_traces = len(combined_fig.data)
+
+# 2. create the dropdown button loggic to toggle visibility of traces based on selected covariate
+for covariate, (start_idx, end_idx) in trace_visibility_map.items():
+    visibility = [False] * total_traces
+    for i in range(start_idx, end_idx):
+        visibility[i] = True
+
+    button = dict(
+        label=covariate, 
+        method='update',
+        args=[
+            {'visible': visibility},
+            {"title": f"Survival Curve by {covariate.replace('_', ' ').title()}"}
+        ]
+    )
+    dropdown_buttons.append(button)
+
+# 3. Format the layout with the dropdown menu at the top left
+
+combined_fig.update_layout(
+    updatemenus=[dict(active=0, buttons=dropdown_buttons, x=0.0, xanchor="left", y=1.15, yanchor="top", direction="down", showactive=True)],
+    title=f"Survival Curve by {covariates[0].replace('_', ' ').title()}" if covariates else "Survival Curve",
+    xaxis_title="Time (Days)",
+    yaxis_title="Survival Probability (Still Absent)",
+    template="plotly_white",
+    hovermode="x unified",
+    width=1350,
+    height=620,
+    margin=dict(t=100, r=80) # Extra top margin for the dropdown
+)
+
+combined_fig.show()
+
+```
+
+## Technical Appendix
+
+```{python}
+#| label: cph-summary
+#| title: "Statistical Hazard Ratios"
+insights_table = insights_df[['exp(coef)', 'pct_change', 'p', 'is_significant']]
+insights_table.index.name = 'Variable'
+
+# Highlight significant p-values 
+def highlight_sig(val):
+    color = '#5cb85c' if val < 0.05 else 'black'
+    weight = 'bold' if val < 0.05 else 'normal'
+    return f'color: {color}; font-weight: {weight}'
+
+styled_summary = insights_table.style.map(highlight_sig, subset=['p']).set_table_styles([
+    {'selector': 'th', 'props': [('font-size', '1.1em'), ('text-align', 'left')]},
+    {'selector': 'td', 'props': [('font-size', '1.0em'), ('padding', '8px')]}])
+
+styled_summary
+```

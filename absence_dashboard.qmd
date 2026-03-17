@@ -1,0 +1,149 @@
+---
+title: "Staff Absence Intelligence"
+format:
+  dashboard:
+    theme: flatly
+    embed-resources: true
+    keep-ipynb: false
+execute:
+  echo: false
+  warning: false
+jupyter: python3
+---
+
+```{python}
+#| label: setup
+#| include: false
+#| cache: false
+import sys
+import os
+import pandas as pd
+
+# Point Python to your source folder
+sys.path.append(os.getcwd())
+
+from src.data_factory import generate_nhs_dummy_data
+from src.models import get_dashboard_survival_outputs, get_dashboard_forecast_outputs
+
+# Generate data and model once
+ts_df, staff_df = generate_nhs_dummy_data()
+
+# Run Models
+cox_model, insights_df, survival_plots, survival_metrics = get_dashboard_survival_outputs(staff_df)
+forecast_fig, forecast_metrics = get_dashboard_forecast_outputs()
+```
+
+# Executive Overview
+## Row {height=25%}
+
+```{python}
+#| component: valuebox
+dict(value=f"{len(staff_df):,}", header="Total Staff Analyzed", icon="people", color="light")
+```
+
+```{python}
+#| component: valuebox
+mae = forecast_metrics['arima_mae']
+naive = forecast_metrics['naive_mae']
+pct_imp = ((naive - mae) / naive) * 100
+dict(value=f"{pct_imp:.1f}%", header="<abbr title='Improvement in Mean Absolute Error (MAE) compared to the baseline seasonal method.'>Forecast Accuracy Improvement</abbr>", icon="graph-up", color="primary")
+
+```
+
+```{python}
+#| component: valuebox 
+c_index = survival_metrics['concordance_index'] 
+dict(value=f"{c_index:.2f}", header="<abbr title='Concordance Index: Evaluates how accurately the model ranks who returns to work first (0.5 = random, 1.0 = perfect).'>Duration Predictive Power</abbr>", icon="bullseye", color="info") 
+```
+
+## Row
+### Strategic Summary
+This page provides a high-level summary of the key findings from the sickness absence analysis. Use this space to outline strategic recommendations for the wellbeing team, informed by the detailed analysis on the other pages.
+
+```{python}
+#| output: asis 
+significant_df = insights_df[insights_df['is_significant']].copy() 
+prolongs = significant_df[significant_df['pct_change'] < 0].index.tolist() 
+shortens = significant_df[significant_df['pct_change'] > 0].index.tolist()
+prolongs_str = ", ".join([f"**{x.replace('_', ' ').title()}**" for x in prolongs]) if prolongs else "None identified" 
+shortens_str = ", ".join([f"**{x.replace('_', ' ').title()}**" for x in shortens]) if shortens else "None identified"
+print(f"""Based on the analysis of **{len(staff_df):,}** staff records, we have identified key drivers of sickness absence and built predictive models to support proactive wellbeing strategies. 
+
+#### Key Findings 
+* **Forecasting Absences:** The time-series model predicts daily absence volumes with an average error of **{mae:.1f}** days (<abbr title="Mean Absolute Error (MAE): The average number of absences our forecast is off by on any given day. Lower is better.">MAE</abbr>). This gives the resource planning team highly reliable estimates of future staffing gaps. 
+* **Predicting Return to Work:** The survival model  predicts the likelihood of staff returning to work with a score of **{c_index:.2f}** (<abbr title="Concordance Score (C-Index): A measure of predictive accuracy for time-to-event models. 0.5 is random guessing, 1.0 is perfect prediction.">Concordance Score</abbr>). 
+* **Risk Factors (Prolonging Absence):** The analysis shows that {prolongs_str} significantly <abbr title="Statistically significant factors that decrease the daily likelihood of a staff member returning to work.">prolongs</abbr> the duration of sickness absences. **Recommendation:** Implement targeted wellbeing check-ins for these demographics early in their absence. 
+* **Protective Factors (Shortening Absence):** Conversely, {shortens_str} are associated with significantly <abbr title="Statistically significant factors that increase the daily likelihood of a staff member returning to work.">shorter</abbr> absence durations.""")
+```
+
+# CPH Model Outputs
+
+## Row 
+### Model Accuracy (Concordance Index)
+```{python}
+#| output: asis
+c_index = survival_metrics['concordance_index']
+print(f"**Concordance Score:** {c_index:.3f}\n\n")
+print("This metric evaluates the model's predictive accuracy by measuring how well it ranks the order of events—specifically, predicting who will return to work first. The score ranges from **0.5** (equivalent to random guessing) to **1.0** (perfect prediction).")
+```
+
+## Row {height=400px}
+### How to Interpret the Model {width = 40%}
+
+This table translates the statistical model into practical insights, highlighting the factors that significantly impact how quickly an employee returns to work.
+For **continuous variables** (like Age): The percentage represents the change in the likelihood of returning to work on any given day for every 1-unit increase in the variable. 
+For example, if age decreases the likelihood by 1.9%, it means for every 1 year older an employee is, their likelihood of returning to work on any given day reduces by 1.9%. 
+For **categorical variables** (like Role or Gender): The percentage represents the change in likelihood compared to the baseline group (e.g., being a Manager vs. the default role).
+
+### Hazard Ratios Plain English Interpretation {width = 60%}
+```{python}
+
+insights_table = insights_df[['exp(coef)', 'pct_change', 'p', 'is_significant']]
+insights_table.index.name = 'Variable' 
+
+pd.set_option('display.max_colwidth', None)
+insight_table_plain_english = insights_df.loc[insights_df['is_significant'], ['interpretation']]
+insight_table_plain_english.index.name = 'Variable'
+insight_table_plain_english
+```
+
+## Column {width = 100%}
+
+### Probability of Remaining Off-work {.panel-tabset}
+```{python}
+#| output: asis
+for covariate, fig in survival_plots.items():
+  print(f"### {covariate.replace('_', ' ').title()}\n")
+  
+  #force html to ensure no raw json escapes the loop
+  print("```{=html}")
+  print(fig.to_html(full_html=False, include_plotlyjs='cdn'))
+  print("```\n")
+
+```
+
+# Time Series Forecast
+## Row {height = 70%}
+### Force-wide Absence Forecast
+This chart compares the performance of a sophisticated SARIMA model against a simple Seasonal Naive forecast. The SARIMA model provides a more accurate prediction by capturing complex trends and seasonality in the historical absence data.
+
+```{python}
+#| output: asis
+print("```{=html}")
+print(forecast_fig.to_html(full_html=False, include_plotlyjs='cdn'))
+print("```")
+```
+
+## Row {height = 30%}
+### Model Performance and Interpretation 
+```{python}
+#| output: asis
+mae = forecast_metrics['arima_mae']
+naive_mae = forecast_metrics['naive_mae']
+pct_better = ((naive_mae - mae) / naive_mae) * 100
+
+print(f"**Forecasting Accuracy (Mean Absolute Error):** The model is currently able to predict the absence rate with an average error of **{mae:.1f}**. \n")
+print(f"This is **{pct_better:.1f}% more accurate** than simply assuming the absence rate will be exactly the same as it was at this time last year (the baseline 'Seasonal Naive' method, which has an average error of **{naive_mae:.1f}**).\n\n")
+
+print("> *Note: A 'Concordance Score' is used to measure the accuracy of Time-to-Event (Survival) models. For time series forecasting like this chart, we use Mean Absolute Error (MAE), which tells us exactly how much our forecast is off by on average.*")
+```

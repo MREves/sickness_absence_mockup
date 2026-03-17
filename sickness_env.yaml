@@ -1,0 +1,28 @@
+name: sickness_absence
+
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - polars                # High-performance data processing
+  - pandas                # For data manipulation and analysis
+  - statsmodels           # For Time Series (SARIMAX)
+  - lifelines             # The best library for CPH Survival analysis
+  - scikit-learn          # For clustering and classification
+  - plotly                # Essential for Quarto interactivity
+  - itables               # searchable, interactive HTML tables
+  - nbformat
+  - jupyter
+  - ipykernel
+  - pmdarima
+  - prophet                # For forecasting (install via pip due to conda issues)
+  - seaborn                # For enhanced statistical visualizations
+  - scipy                  # For statistical tests and distributions
+  - matplotlib             # For static plotting (optional, but useful for quick visualizations)
+  - pyarrow                # For efficient data serialization (optional but can speed up data loading)
+  - pyyaml                 # For reading YAML configuration files
+  - pip
+  - pip:
+      - kaleido           # Required for exporting static versions of plotly charts
+      - missingno         # Great for visualizing data gaps (important for NHS data)

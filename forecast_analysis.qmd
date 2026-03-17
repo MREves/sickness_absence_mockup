@@ -1,0 +1,49 @@
+---
+title: "Forecast Analysis"
+jupyter: python3
+---
+
+```{python}
+#| label: setup
+#| include: false
+#| cache: false
+import sys
+import os
+
+# Point Python to your source folder
+sys.path.append(os.getcwd())
+
+from src.data_factory import generate_nhs_dummy_data
+from src.models import get_dashboard_forecast_outputs
+
+# Generate data and model once
+ts_df, _ = generate_nhs_dummy_data()
+
+# Run Forecast Model
+forecast_fig, forecast_metrics = get_dashboard_forecast_outputs()
+```
+
+## Force-wide Absence Forecast
+
+This chart compares the performance of a sophisticated SARIMA model against a simple Seasonal Naive forecast. The SARIMA model provides a more accurate prediction by capturing complex trends and seasonality in the historical absence data.
+
+```{python}
+#| label: forecast-plot
+#| output: asis
+# Force pure HTML rendering to prevent Jupyter from falling back to a raw JSON text dump
+print(forecast_fig.to_html(full_html=False, include_plotlyjs='cdn'))
+```
+
+## Model Performance & Interpretation
+
+```{python}
+#| output: asis
+mae = forecast_metrics['arima_mae']
+naive_mae = forecast_metrics['naive_mae']
+pct_better = ((naive_mae - mae) / naive_mae) * 100
+
+print(f"**Forecasting Accuracy (Mean Absolute Error):** The model is currently able to predict the absence rate with an average error of **{mae:.1f}**. \n")
+print(f"This is **{pct_better:.1f}% more accurate** than simply assuming the absence rate will be exactly the same as it was at this time last year (the baseline 'Seasonal Naive' method, which has an average error of **{naive_mae:.1f}**).\n\n")
+
+print("> *Note: A 'Concordance Score' is used to measure the accuracy of Time-to-Event (Survival) models. For time series forecasting like this chart, we use Mean Absolute Error (MAE), which tells us exactly how much our forecast is off by on average.*")
+```
